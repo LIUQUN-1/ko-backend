@@ -763,7 +763,7 @@ def create_entity_and_link(tx, name, path, userid):
 def redis_filter(list):
     r = redis.Redis(
         host='114.213.232.140',
-        port=16379,
+        port=26379,
         decode_responses=True
     )
     start = time.time()
@@ -904,7 +904,7 @@ def push_file_info_mysql(session,words,stop_words,file_id,file_name ,file_dict, 
 def redis_filter(list):
     r = redis.Redis(
         host='114.213.232.140',
-        port=16379,
+        port=26379,
         decode_responses=True
     )
     start = time.time()

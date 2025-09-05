@@ -536,127 +536,138 @@ def search_nodeIds(userID,content):
     for i in result:
         nodes.append(int(i[3]))
     return nodes
-# def test(content,userID):
-#     # xiaoqi_id =search() #具体的消歧实体编号，可以查看xiaoqi_new表中的id
-#     # userID = 6000622#用户ID
+
 #
+# def test(content, userID):
+#     # 创建以 content 命名的主文件夹路径
+#     print("##############################################")
+#     base_dir = os.path.join('D:\data\Auto_recommendtion', content)
+#     if not os.path.exists(base_dir):
+#         os.makedirs(base_dir)
+#
+#     zip_new_file = os.path.join(base_dir, content + ".zip")
+#     print(zip_new_file)
+#
+#     # 清理旧数据（如果逻辑需要）
+# #     deletezip(base_dir)
+#
+#     # 数据库与Bucket连接
 #     db = MySQLDatabase(
 #         host="114.213.234.179",
-#         user="koroot",  # 替换为您的用户名
-#         password="DMiC-4092",  # 替换为您的密码
-#         database="db_hp"  # 替换为您的数据库名
+#         user="koroot",
+#         password="DMiC-4092",
+#         database="db_hp"
 #     )
 #     db.connect()
-#     minio_address = "114.213.232.140:19000"
-#     minio_admin = "minioadmin"
-#     minio_password = "minioadmin"
 #
-#     bucket = Bucket(minio_address=minio_address,
-#                     minio_admin=minio_admin,
-#                     minio_password=minio_password)
-#     zip_new_file = 'F:\data\Auto_recommendtion\\' + content+ ".zip"
-#     print(zip_new_file)
-#     deletezip('F:\data\Auto_recommendtion\\')
+#     bucket = Bucket(
+#         minio_address="114.213.232.140:19000",
+#         minio_admin="minioadmin",
+#         minio_password="minioadmin"
+#     )
 #
-#     node_id=search_nodeIds(userID,content)
+#     node_id = search_nodeIds(userID, content)
 #
-#     # nodeIDs = str(node_id).split(",")
-#     # if nodeIDs==['']:
-#     #     return "文件为空！！！"
-#
-#     # 检查第一个地址是否存在
 #     driver = GraphDatabase.driver("bolt://114.213.232.140:37687", auth=("neo4j", "123456"))
 #     session = driver.session()
-#     # print(nodeIDs)
-#     all_dire=[]
 #
-#     result_dire=search_dire_in_mysql(db,content,userID)
+#     all_dire = []
+#
+#     # 创建所有子目录（基于MySQL目录信息）
+#     result_dire = search_dire_in_mysql(db, content, userID)
 #     for i in result_dire:
-#         zip_file1 = 'F:\data\Auto_recommendtion\\' + i[0] + "\\"
-#         if not os.path.exists(zip_file1):
-#             # 如果不存在,创建该目录
-#             os.makedirs(zip_file1)
-#         if (zip_file1 not in all_dire):
-#             all_dire.append(zip_file1)
-#     address=[]
+#         dir_path = os.path.join(base_dir, i[0])
+#         if not os.path.exists(dir_path):
+#             os.makedirs(dir_path)
+#         if dir_path not in all_dire:
+#             all_dire.append(dir_path)
+#
+#     address = []
 #     for i in node_id:
-#         result=search_fileId_in_mysql(db,i,userID)
+#         result = search_fileId_in_mysql(db, i, userID)
 #         for res in result:
 #             dire_name = res[0]
-#             node_path = "bb/"+res[1]
-#             zip_file1='F:\data\Auto_recommendtion\\' + dire_name+ "\\"
-#             if not os.path.exists(zip_file1):
-#                 # 如果不存在,创建该目录
-#                 os.makedirs(zip_file1)
-#             if (zip_file1 not in all_dire):
-#                 all_dire.append(zip_file1)
-#             k=bucket.download_file_from_bucket('kofiles', node_path, zip_file1 + node_path.split('/')[-1])
-#             if k==1:
-#                 address.append(zip_file1 + node_path.split('/')[-1])
+#             node_path = "bb/" + res[1]
+#             target_dir = os.path.join(base_dir, dire_name)
+#             if not os.path.exists(target_dir):
+#                 os.makedirs(target_dir)
+#             if target_dir not in all_dire:
+#                 all_dire.append(target_dir)
+#
+#             filename = node_path.split('/')[-1]
+#             full_path = os.path.join(target_dir, filename)
+#             k = bucket.download_file_from_bucket('kofiles', node_path, full_path)
+#             if k == 1:
+#                 address.append(full_path)
+#
 #     return address
 
 def test(content, userID):
-    # 创建以 content 命名的主文件夹路径
-    base_dir = os.path.join('F:\\data\\Auto_recommendtion', content)
+    print(f"[DEBUG] 开始处理: {content}, 用户ID: {userID}")
+
+    base_dir = os.path.join('D:\data\Auto_recommendtion', content)
+    print(f"[DEBUG] 基础目录: {base_dir}")
+
     if not os.path.exists(base_dir):
         os.makedirs(base_dir)
+        print(f"[DEBUG] 创建目录: {base_dir}")
+    else:
+        print(f"[DEBUG] 目录已存在: {base_dir}")
 
-    zip_new_file = os.path.join(base_dir, content + ".zip")
-    print(zip_new_file)
-
-    # 清理旧数据（如果逻辑需要）
-#     deletezip(base_dir)
-
-    # 数据库与Bucket连接
-    db = MySQLDatabase(
-        host="114.213.234.179",
-        user="koroot",
-        password="DMiC-4092",
-        database="db_hp"
-    )
+    # 数据库连接
+    print("[DEBUG] 连接数据库...")
+    db = MySQLDatabase(host="114.213.234.179", user="koroot", password="DMiC-4092", database="db_hp")
     db.connect()
 
-    bucket = Bucket(
-        minio_address="114.213.232.140:19000",
-        minio_admin="minioadmin",
-        minio_password="minioadmin"
-    )
-
+    # 获取节点ID
+    print("[DEBUG] 查询节点ID...")
     node_id = search_nodeIds(userID, content)
+    print(f"[DEBUG] 找到节点ID: {node_id}")
 
-    driver = GraphDatabase.driver("bolt://114.213.232.140:37687", auth=("neo4j", "123456"))
-    session = driver.session()
-
-    all_dire = []
-
-    # 创建所有子目录（基于MySQL目录信息）
+    # 创建目录
     result_dire = search_dire_in_mysql(db, content, userID)
+    print(f"[DEBUG] 数据库目录结果: {result_dire}")
+
     for i in result_dire:
         dir_path = os.path.join(base_dir, i[0])
+        print(f"[DEBUG] 处理目录: {dir_path}")
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
-        if dir_path not in all_dire:
-            all_dire.append(dir_path)
+            print(f"[DEBUG] 创建子目录: {dir_path}")
 
+    # 下载文件
     address = []
     for i in node_id:
+        print(f"[DEBUG] 处理节点 {i}...")
         result = search_fileId_in_mysql(db, i, userID)
+        print(f"[DEBUG] 文件查询结果: {result}")
+
         for res in result:
             dire_name = res[0]
             node_path = "bb/" + res[1]
             target_dir = os.path.join(base_dir, dire_name)
-            if not os.path.exists(target_dir):
-                os.makedirs(target_dir)
-            if target_dir not in all_dire:
-                all_dire.append(target_dir)
-
             filename = node_path.split('/')[-1]
             full_path = os.path.join(target_dir, filename)
+
+            print(f"[DEBUG] 下载: {node_path} -> {full_path}")
+
             k = bucket.download_file_from_bucket('kofiles', node_path, full_path)
             if k == 1:
+                print(f"[DEBUG] 下载成功: {full_path}")
                 address.append(full_path)
+            else:
+                print(f"[ERROR] 下载失败: {node_path}")
+                # 检查MinIO中文件是否存在
+                try:
+                    objects = bucket.minioClient.list_objects('kofiles', prefix=node_path)
+                    for obj in objects:
+                        print(f"[DEBUG] MinIO中找到文件: {obj.object_name}")
+                except Exception as e:
+                    print(f"[ERROR] 检查MinIO文件失败: {e}")
 
+    print(f"[DEBUG] 最终文件列表: {address}")
     return address
+
 
 
 ##########################################################################################################################################################################################
@@ -727,6 +738,41 @@ def generate_prompt(person_name: str, raw_text: str, max_keywords: int = 15) -> 
 {raw_text}
 """
 
+# def generate_prompt(entity_name: str, raw_text: str, max_keywords: int = 15) -> str:
+#     return f"""你是一个信息检索专家，请从以下原始文本中，**逐字提取出**最多 {max_keywords} 个与【{entity_name}】实体高度相关、便于网络搜索的关键词短语。
+#
+# # 实体类型说明：
+# - 人物实体：如"李白"、"爱因斯坦"等具体人物
+# - 概念实体：如"数据挖掘"、"机器学习"等抽象概念
+# - 机构实体：如"合肥工业大学"、"中国科学院"等组织机构
+# - 地点实体：如"北京市"、"黄山"等地理名称
+# - 事件实体：如"第二次世界大战"、"北京奥运会"等历史事件
+# - 产品实体：如"iPhone"、"微信"等具体产品
+#
+# # 请严格遵守以下约束：
+#
+# 1. 所有关键词必须**逐字出现在原文中**，不能编造、概括或扩展；
+# 2. 根据目标实体的类型，优先提取以下相关内容：
+#    - 对于**人物实体**：提取所属机构、职务、研究领域、成就等
+#    - 对于**概念实体**：提取相关技术、应用领域、理论基础等
+#    - 对于**机构实体**：提取所在地点、下属部门、重点学科、知名成果等
+#    - 对于**地点实体**：提取地理位置、特色产业、历史文化等
+#    - 对于**事件实体**：提取发生时间、参与方、影响范围等
+#    - 对于**产品实体**：提取开发商、功能特点、应用场景等
+# 3. 提取具有独立搜索价值的关键词片段，例如：
+#    - "安徽大学计算机科学与技术学院" → "安徽大学"；"计算机科学与技术学院"
+#    - "深度学习神经网络模型" → "深度学习"；"神经网络"
+#
+# # 输出格式：
+# - 只需要输出关键词
+# - 中文分号分隔（使用中文分号"；"）
+# - 每条关键词应具有独立的搜索价值
+# - 所有关键词必须来自原文，且不超过 {max_keywords} 个
+#
+# 原始文本如下：
+# {raw_text}
+# """
+
 
 def call_big_model(text: str, person_name: str, max_keywords: int, api_key: str) -> Optional[str]:
     """调用大模型 API
@@ -743,7 +789,7 @@ def call_big_model(text: str, person_name: str, max_keywords: int, api_key: str)
         "Authorization": f"Bearer {API_KEY}",
         "Content-Type": "application/json"
     }
-
+    print("##############################################")
     prompt = generate_prompt(person_name, text, max_keywords)
     payload = {
         "model": MODEL_NAME,
@@ -799,81 +845,6 @@ def clean_entity_name(entity: str) -> str:
 
 
 
-# def auto_recommendtion(request: HttpRequest) -> dict:
-#     """
-#     主推荐函数，接收 Django 请求对象
-#     返回包含结果或错误信息的字典
-#     """
-#     # 从请求中获取参数
-#     name = request.GET.get("name", "").strip()
-#     user_id = request.GET.get("user_id", "").strip()
-#     api_key = request.GET.get("api_key", "sk-uwokmhxknecolbmvcrnfstfrcqzjeuekvnxfoghzrakeqybw")
-#     max_keywords = int(request.GET.get("max_keywords", 5))
-#     num_pages_to_crawl = int(request.GET.get("num_pages_to_crawl", 30))
-#
-#     if not name or not user_id:
-#         return {"status": "error", "message": "Missing required parameters: name or user_id"}
-#
-#     try:
-#         # 1. 获取文件地址，下载文件s
-#         folder = test(name, int(user_id))
-#
-#         # 清理实体名（去除末尾数字）
-#         entity_name = clean_entity_name(name)
-#
-#         # 2. 读取本地文件内容
-#         print("正在并行读取文件内容...")
-#         start_time = time.time()
-#         full_text = merge_all_texts(folder)
-#         end_time = time.time()
-#         print(f"✅ 处理完成！耗时: {end_time - start_time:.2f}秒")
-#
-#         if not full_text:
-#             return {"status": "error", "message": "No content found in files"}
-#
-#         # 3. 抽取关键词
-#         limited_text = full_text[:10000]  # 控制输入长度
-#         start_time = time.time()
-#         # result = call_big_model(limited_text, entity_name, max_keywords)
-#         result = call_big_model(
-#             text=limited_text,
-#             person_name=entity_name,
-#             max_keywords=max_keywords,
-#             api_key=api_key  # 确保这个参数被传递
-#         )
-#         end_time = time.time()
-#         print(f"✅ 关键词提取完成！耗时: {end_time - start_time:.2f}秒")
-#
-#         if not result:
-#             return {"status": "error", "message": "Failed to extract keywords"}
-#
-#         keywords = [kw.strip() for kw in re.split(r"[；;]", result) if kw.strip()]
-#
-#         # 4. 组合查询词
-#         combined_query = f"{entity_name} {keywords[0]} {keywords[1]}" if len(keywords) >= 2 else entity_name
-#
-#         # 创建模拟请求对象
-#         mock_request = type('MockRequest', (), {'GET': {
-#             "name": combined_query,
-#             "num_pages_to_crawl": num_pages_to_crawl,
-#             "userID": user_id,
-#             "xiaoqi_name": entity_name,
-#             "enable_deduplication": "true"
-#         }})
-#
-#         search_result = search_urls(mock_request)  # 注意：这里直接调用函数
-#         return {
-#             "status": "success",
-#             "data": search_result,
-#             "keywords": keywords,
-#             "combined_query": combined_query
-#         }
-#
-#
-#     except Exception as e:
-#         return {"status": "error", "message": str(e)}
-
-
 def auto_recommendtion(request: HttpRequest) -> dict:
     """
     主推荐函数，接收 Django 请求对象
@@ -884,7 +855,7 @@ def auto_recommendtion(request: HttpRequest) -> dict:
     api_key = request.GET.get("api_key", "sk-uwokmhxknecolbmvcrnfstfrcqzjeuekvnxfoghzrakeqybw")
     max_keywords = int(request.GET.get("max_keywords", 5))
     num_pages_to_crawl = int(request.GET.get("num_pages_to_crawl", 30))
-
+    print("##############################################")
     if not name or not user_id:
         return {"status": "error", "message": "Missing required parameters: name or user_id"}
 

@@ -707,6 +707,7 @@ def crawl_pages(request):
     - only_name: 是否只使用名称进行分类（可选，默认False）
     - use_multithreading: 是否使用多线程（可选，默认True）
     - max_workers: 最大线程数（可选，默认2）
+    - private:保存文件为公开还是私有 0?1（可选，默认1私有）
 
     返回:
     - 处理结果
@@ -722,6 +723,7 @@ def crawl_pages(request):
                 use_multithreading = data.get('use_multithreading', True)
                 max_workers = data.get('max_workers', 2)
                 only_name = data.get('only_name', False)
+                private = data.get('private', 1)
             except json.JSONDecodeError:
                 return {"status": "error", "message": "无效的JSON格式"}
         else:
@@ -815,7 +817,7 @@ def crawl_pages(request):
             try:
                 # 调用 disambiguation 的 process_file 函数进行批量处理
                 from query_neo4j.disambiguation import process_file
-                batch_result = process_file(file_name_list, file_path_list, name, userid, private=1, url_list=url_list,
+                batch_result = process_file(file_name_list, file_path_list, name, userid, private, url_list=url_list,
                                             only_name=only_name)
 
                 if batch_result and batch_result.get('status') == 'success':

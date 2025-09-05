@@ -619,9 +619,9 @@ def main(request):
     bucket = Bucket(minio_address=minio_address,
                     minio_admin=minio_admin,
                     minio_password=minio_password)
-    zip_new_file = 'F:\data\\' + content+str(xiaoqi_id)+ ".zip"
+    zip_new_file = 'D:\data\\' + content+str(xiaoqi_id)+ ".zip"
     print(zip_new_file)
-    deletezip('F:\data\\')
+    deletezip('D:\data\\')
 
     nodeIDs = str(node_id).split(",")
 
@@ -638,7 +638,7 @@ def main(request):
 
     result_dire=search_dire_in_mysql(db,content,xiaoqi_id,userID)
     for i in result_dire:
-        zip_file1 = 'F:\data\\' + i[0] + "\\"
+        zip_file1 = 'D:\data\\' + i[0] + "\\"
         if not os.path.exists(zip_file1):
             # 如果不存在,创建该目录
             os.makedirs(zip_file1)
@@ -666,7 +666,7 @@ def main(request):
         for res in result:
             dire_name = res[0]
             node_path = "bb/"+res[1]
-            zip_file1='F:\data\\' + dire_name+ "\\"
+            zip_file1='D:\data\\' + dire_name+ "\\"
             if not os.path.exists(zip_file1):
                 # 如果不存在,创建该目录
                 os.makedirs(zip_file1)
@@ -722,9 +722,9 @@ def old_method(xiaoqi_id,content,node_id,userID,test_type):
     bucket = Bucket(minio_address=minio_address,
                     minio_admin=minio_admin,
                     minio_password=minio_password)
-    zip_new_file = 'F:\data\\' + content+str(xiaoqi_id)+ ".zip"
+    zip_new_file = 'D:\data\\' + content+str(xiaoqi_id)+ ".zip"
     print(zip_new_file)
-    deletezip('F:\data\\')
+    deletezip('D:\data\\')
 
     nodeIDs = str(node_id).split(",")
     if nodeIDs==['']:
@@ -769,7 +769,7 @@ def old_method(xiaoqi_id,content,node_id,userID,test_type):
             node_name = zhconv.convert(res['t']._properties["name"], 'zh-cn')
             node_path = zhconv.convert(res['t']._properties["path"], 'zh-cn')
             dire_name = zhconv.convert(res['t1']._properties["name"], 'zh-cn')
-            zip_file1='F:\data\\' + dire_name+ "\\"
+            zip_file1='D:\data\\' + dire_name+ "\\"
             if not os.path.exists(zip_file1):
                 # 如果不存在,创建该目录
                 os.makedirs(zip_file1)
