@@ -52,6 +52,41 @@ class EnhancedMySQLDatabase(MySQLDatabase):
         finally:
             # 确保连接在操作后关闭
             self.connection.close()
+    def update_frequency(self, user_id, email, keyword, frequency):
+        """
+        更新 user_keywords 表中指定用户的记录的 frequency 字段。
+        参数:
+            user_id: 用户ID
+            email: 用户邮箱
+            keyword: 关键词
+            frequency: 频率
+
+        返回:
+             message: str
+        """
+        try:
+            with self.connection.cursor() as cursor:
+                # 更新指定用户的记录
+                update_query = """
+                    UPDATE user_keywords 
+                    SET frequency = %s
+                    WHERE userid = %s AND email = %s AND keyword = %s
+                """
+                cursor.execute(update_query, (frequency, user_id, email, keyword))
+                self.connection.commit()
+
+                if cursor.rowcount > 0:
+                    return  "更新成功"
+                else:
+                    return "没有找到匹配的记录"
+
+        except pymysql.MySQLError as e:
+            self.connection.rollback()
+            logger.error(f"更新user_keywords失败：{e}")
+            return  f"数据库错误: {str(e)}"
+        finally:
+            # 确保连接在操作后关闭
+            self.connection.close()
     def delete_user_keyword(self, user_id, email, keyword):
         """
         删除 user_keywords 表中指定用户的记录。
@@ -152,7 +187,7 @@ class EnhancedMySQLDatabase(MySQLDatabase):
         try:
             with self.connection.cursor() as cursor:
                 # 查询指定用户的记录
-                select_query = "SELECT email, keyword,subscriptionTime FROM user_keywords WHERE userid = %s"
+                select_query = "SELECT email, keyword,subscriptionTime,frequency FROM user_keywords WHERE userid = %s"
                 cursor.execute(select_query, (userid,))
                 results = cursor.fetchall()
                 return results
@@ -242,6 +277,24 @@ def knowledge_subscription(request):
                 return JsonResponse({"status": "success", "message": message}, status=200)
             except Exception as e:
                 return JsonResponse({"status": "error", "message": f"数据库操作失败: {str(e)}"}, status=500)
+        elif operation == 'update':
+            """
+            更新订阅信息
+            """
+            frequency = data['frequency']
+            try:
+                db = EnhancedMySQLDatabase(
+                    host="114.213.234.179",
+                    user="koroot",
+                    password="DMiC-4092",
+                    database="db_hp"
+                )
+                # 建立数据库连接
+                db.connect()
+                message = db.update_frequency( user_id, receiver_email, name, frequency)
+                return JsonResponse({"status": "success", "message": message}, status=200)
+            except Exception as e:
+                return JsonResponse({"status": "error", "message": f"数据库操作失败: {str(e)}"}, status=500)
         else:
             return JsonResponse({"status": "error", "message": f"请确定操作"}, status=500)
 def get_subscriptionInfo(request):
@@ -280,12 +333,12 @@ def get_subscriptionInfo(request):
                 # 否则查询所有关键词
                 results = db.get_user_keywords(user_id)
                 final_results = []
-                for email, name,  time in results:
+                for email, name, time, frequency in results:
                     time = time.strftime('%Y-%m-%d')
                     # 以name作为keyword调用查询
                     query_result = db.get_xiaoqi_by_name(name)
                     # 将查询结果添加到最终结果中
-                    final_results.append((email, name, query_result[0][0],time))  # (邮箱, 原始名称, 查询到的名称)
+                    final_results.append((email, name, query_result[0][0],time,frequency))  # (邮箱, 原始名称, 查询到的名称)
                 return JsonResponse({"status": "success", "data": final_results}, status=200)
         except Exception as e:
             return JsonResponse({"status": "error", "message": f"数据库操作失败: {str(e)}"}, status=500)

@@ -516,7 +516,31 @@ def process_urls_with_user_deduplication(url_list, user_id, xiaoqi_name=None):
         "duplicate_urls": duplicate_urls
     }
 
+def filter_search_results(search_results, query, use_first_word_only=True):
+    """
+    过滤搜索结果
+    :param search_results: 原始搜索结果列表
+    :param query: 查询字符串
+    :param use_first_word_only: 是否只使用第一个词进行过滤
+    :return: 过滤后的结果列表
+    """
+    if not query or not query.strip():
+        return search_results  # 或者返回 []
 
+    query = query.strip()
+
+    if use_first_word_only and ' ' in query:
+        # 使用第一个词
+        search_term = query.split()[0]
+    else:
+        # 使用整个query
+        search_term = query
+
+    return [
+        result for result in search_results
+        if search_term.lower() in result.get('title', '').lower()
+           or search_term.lower() in result.get('content', '').lower()
+    ]
 def search_urls(request):
     """
     根据name搜索URL，并返回URL列表和对应将要保存的文件名
@@ -558,7 +582,7 @@ def search_urls(request):
             file_type=files,
             offline_search=offline_search
         )
-
+        search_result = filter_search_results(search_result, name, use_first_word_only=True)
         if not search_result:
             return {"status": "error", "message": "搜索结果为空"}
 
@@ -709,6 +733,7 @@ def fetch_search_results_with_searx(query: str,
     }
 
     max_attempts = 3
+    timeout_config = 10
     for attempt in range(max_attempts):
         try:
             search_url = search_url_list[attempt % len(search_url_list)]
@@ -718,7 +743,7 @@ def fetch_search_results_with_searx(query: str,
                 search_url,
                 params=params,
                 headers=headers,
-                timeout=3,
+                timeout=timeout_config,
                 verify=False,  # 禁用SSL验证，适用于本地开发
             )
 
@@ -1151,3 +1176,25 @@ def enhance_keywords_with_domain(name, xiaoqi_name):
         return name
 
     return name
+
+
+# 创建一个模拟请求类
+class MockRequest:
+    def __init__(self, params_dict):
+        self.GET = params_dict
+
+# 设置请求参数
+params = {
+    "name": "周鵬1",
+    "num_pages_to_crawl": "200",
+    "userID": "6000622"
+}
+
+# 创建请求对象并调用函数
+request = MockRequest(params)
+result = search_urls(request)
+
+print("搜索状态:", result["status"])
+print("搜索结果:", result)
+unique_urls_count = len(result["data"]["unique_urls"])
+print(f"唯一URL数量: {unique_urls_count}")

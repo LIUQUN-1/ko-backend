@@ -188,7 +188,7 @@ def process_all_subscriptions():
                 "name": keyword[:-1],
                 "xiaoqi_name": keyword,
                 "userID": user_id,
-                "num_pages_to_crawl": "5",
+                "num_pages_to_crawl": "10",
                 "offline_search": "false",
                 "enable_deduplication":"false",
             }
@@ -231,7 +231,7 @@ def process_all_subscriptions():
             # 3. 发送邮件 (这里的邮件发送逻辑需要您补充完整)
             file_titles = [f['title'] for f in unique_urls]
             send_subscription_email(SENDER_EMAIL, email, SMTP_SERVER, SMTP_PORT , SENDER_PASSWORD, file_titles,keyword)
-            logger.info(f"为用户 {email} 成功处理关键词 '{keyword}'。邮件发送功能待实现。")
+            logger.info(f"为用户 {email} 成功处理关键词 '{keyword}'。")
 
         except Exception as e:
             logger.error(f"处理用户 {user_id} 时发生未知异常: {e}", exc_info=True)
