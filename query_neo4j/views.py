@@ -68,9 +68,8 @@ from query_neo4j import search_urls
 from query_neo4j import crawl_pages
 from query_neo4j import create_entity
 from query_neo4j import auto_recommendtion
-from query_neo4j import search_time_auth
 from query_neo4j import knowledge_subscription
-
+from query_neo4j import change_directory
 def index(request):
     # return HttpResponse("neo4j results")
     return HttpResponse(haokeywords.main(request))
@@ -299,7 +298,8 @@ def search_timeauth(request):
         )
 
 def knowledge_subscription_view(request):
-    return HttpResponse(knowledge_subscription.knowledge_subscription(request), content_type='application/json')
-
+        return HttpResponse(knowledge_subscription.knowledge_subscription(request), content_type='application/json')
 def get_subscriptionInfo_view(request):
     return HttpResponse(knowledge_subscription.get_subscriptionInfo(request), content_type='application/json')
+def change_directory_view(request):
+    return HttpResponse(change_directory.change_directory(request), content_type='application/json')

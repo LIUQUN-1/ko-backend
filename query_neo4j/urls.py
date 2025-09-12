@@ -69,5 +69,6 @@ urlpatterns = [
     path('auto_recommend', views.auto_recommend, name='auto_recommend'),
     path('search_timeauth', views.search_timeauth, name='search_timeauth'),
     path('knowledge_subscription', views.knowledge_subscription_view, name='knowledge_subscription'),
-    path('get_subscriptionInfo', views.get_subscriptionInfo_view, name='knowledge_subscription')
+    path('get_subscriptionInfo', views.get_subscriptionInfo_view, name='knowledge_subscription'),
+    path('change_directory', views.change_directory_view, name='change_directory')
 ]
