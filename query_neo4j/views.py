@@ -70,6 +70,7 @@ from query_neo4j import create_entity
 from query_neo4j import auto_recommendtion
 from query_neo4j import knowledge_subscription
 from query_neo4j import change_directory
+from query_neo4j import contents_gen_manage
 def index(request):
     # return HttpResponse("neo4j results")
     return HttpResponse(haokeywords.main(request))
@@ -303,3 +304,5 @@ def get_subscriptionInfo_view(request):
     return HttpResponse(knowledge_subscription.get_subscriptionInfo(request), content_type='application/json')
 def change_directory_view(request):
     return HttpResponse(change_directory.change_directory(request), content_type='application/json')
+def directory_management(request):
+    return HttpResponse(contents_gen_manage.directory_management(request), content_type='application/json')

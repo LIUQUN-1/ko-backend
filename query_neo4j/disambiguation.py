@@ -1734,7 +1734,7 @@ def updata_to_mysql_new(result, is_xiaoqi):
         for key, value in result.items():
             if is_xiaoqi:
                 data_to_insert = {
-                    "key_words": str(value[0]),
+                    "key_words": "",  # 修改为空字符串 原："key_words": str(value[0]),
                     "xiaoqi_name": str(key)
                 }
                 # 插入 xiaoqi_new 表并获取 ID

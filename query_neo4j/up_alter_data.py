@@ -174,10 +174,21 @@ def main(request):
         "xiaoqi_to_id":int(alter_xiaoqi_to_index),
         "username":str(user_name),
         "update_time":str(formatted_date),
-        "entity_list":str(entity_list),
+        "entity_list":str(entity_list),#"None"  str(entity_list)
         "content":str(content),
         "status":"waiting"
     }
-    # print(key)
+    # 输出详细的参数信息
+    print("=== 后端接收到的参数 ===")
+    print(f"nodeID: {nodeID} (类型: {type(nodeID)})")
+    print(f"userID: {userID} (类型: {type(userID)})")
+    print(f"nodeName: {nodeName} (类型: {type(nodeName)})")
+    print(f"alter_xiaoqi_to: {alter_xiaoqi_to} (类型: {type(alter_xiaoqi_to)})")
+    print(f"altered_xiaoqi_index: {altered_xiaoqi_index} (类型: {type(altered_xiaoqi_index)})")
+    print(f"alter_xiaoqi_to_index: {alter_xiaoqi_to_index} (类型: {type(alter_xiaoqi_to_index)})")
+    print(f"entity_list: '{entity_list}' (类型: {type(entity_list)}, 长度: {len(entity_list)})")
+    print(f"content: {content} (类型: {type(content)})")
+    print("=======================")
+    print(data_to_insert)
     db.insert_data_without_primary("user_alter_data", data_to_insert)
     return 0

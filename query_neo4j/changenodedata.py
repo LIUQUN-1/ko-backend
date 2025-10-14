@@ -252,82 +252,125 @@ def find_xiaoqi_id(db,content):
     for i in result_temp:
         xiaoqi_id = i[0]
     return xiaoqi_id
-def change_file_dire(db,file_id,old_dire_id,new_dire_id,xiaoqi_id,userID,new_dire,old_dire):
+# def change_file_dire(db,file_id,old_dire_id,new_dire_id,xiaoqi_id,userID,new_dire,old_dire):
+#
+#     #绝了，拖拽结束的目标大概率会定位到文件？？？？
+#     #     query = """
+#     #             Update dir_file
+#     #             Set dir_id=%s
+#     # WHERE dir_id=%s
+#     # AND file_id = %s;
+#     #         """
+#     if "." in new_dire:
+#         query = """
+#
+#         select df.dir_id
+# from dir_file AS df
+# Join dir_entity As de ON de.id=df.dir_id and de.userid=%s
+# Join `file`
+# where `file`.name=%s and `file`.id=df.file_id
+#                     """
+#         try:
+#             with db.connection.cursor() as cursor:
+#                 cursor.execute(query, (int(userID),str(new_dire)))
+#                 result = cursor.fetchall()
+#                 new_dire_id=result[0][0]
+#                 # db.connection.commit()
+#         except pymysql.MySQLError as e:
+#             return "修改失败" + str(e)
+#             raise
+#     # if "." in old_dire:
+#     #         query = """
+#     #
+#     #         select df.dir_id
+#     # from dir_file AS df
+#     # Join dir_entity As de ON de.id=df.dir_id and de.userid=%s
+#     # Join `file`
+#     # where `file`.name=%s and `file`.id=df.file_id
+#     #                     """
+#     #         try:
+#     #             with db.connection.cursor() as cursor:
+#     #                 cursor.execute(query, (old_dire, int(userID)))
+#     #                 result = cursor.fetchall()
+#     #                 old_dire_id = result[0]
+#     #                 # db.connection.commit()
+#     #         except pymysql.MySQLError as e:
+#     #             return "修改失败" + str(e)
+#     #             raise
+#     print("dire_id is :"+str(new_dire_id))
+#     query = """
+#                 UPDATE dir_file df
+# JOIN dir_entity de ON df.dir_id = de.id
+# SET df.dir_id = %s
+# WHERE df.file_id = %s
+# AND de.entity_id = %s
+# AND de.userid=%s;
+#             """
+#     try:
+#         with db.connection.cursor() as cursor:
+#             cursor.execute(query, (int(new_dire_id),int(file_id),int(xiaoqi_id),int(userID)))
+#             result = cursor.fetchall()
+#             db.connection.commit()
+#     except pymysql.MySQLError as e:
+#         return "修改失败"+str(e)
+#         raise
+#     return "Success"
+def change_file_dire(db, file_id, from_id, from_type, to_id, to_type, xiaoqi_id, userID):
 
-    #绝了，拖拽结束的目标大概率会定位到文件？？？？
-    #     query = """
-    #             Update dir_file
-    #             Set dir_id=%s
-    # WHERE dir_id=%s
-    # AND file_id = %s;
-    #         """
-    if "." in new_dire:
-        query = """
-        
-        select df.dir_id
-from dir_file AS df
-Join dir_entity As de ON de.id=df.dir_id and de.userid=%s
-Join `file`
-where `file`.name=%s and `file`.id=df.file_id 
-                    """
-        try:
-            with db.connection.cursor() as cursor:
-                cursor.execute(query, (int(userID),str(new_dire)))
-                result = cursor.fetchall()
-                new_dire_id=result[0][0]
-                # db.connection.commit()
-        except pymysql.MySQLError as e:
-            return "修改失败" + str(e)
-            raise
-    # if "." in old_dire:
-    #         query = """
-    #
-    #         select df.dir_id
-    # from dir_file AS df
-    # Join dir_entity As de ON de.id=df.dir_id and de.userid=%s
-    # Join `file`
-    # where `file`.name=%s and `file`.id=df.file_id
-    #                     """
-    #         try:
-    #             with db.connection.cursor() as cursor:
-    #                 cursor.execute(query, (old_dire, int(userID)))
-    #                 result = cursor.fetchall()
-    #                 old_dire_id = result[0]
-    #                 # db.connection.commit()
-    #         except pymysql.MySQLError as e:
-    #             return "修改失败" + str(e)
-    #             raise
-    print("dire_id is :"+str(new_dire_id))
-    query = """
-                UPDATE dir_file df
-JOIN dir_entity de ON df.dir_id = de.id
-SET df.dir_id = %s
-WHERE df.file_id = %s
-AND de.entity_id = %s
-AND de.userid=%s;
-            """
+    # 1. 确定删除操作的目标表和 ID 字段
+    if from_type == 'dir_entity':
+        delete_table = 'dir_file'
+        delete_col = 'dir_id' # 对应 dir_entity.id
+    else: # 'dir_entity_more'
+        delete_table = 'dir_more_file'
+        delete_col = 'dir_more_id' # 对应 dir_entity_more.id
+
+    # 2. 执行删除操作 (从旧目录解绑文件)
+    delete_query = f"""
+    DELETE FROM {delete_table}
+    WHERE file_id = %s AND {delete_col} = %s;
+    """
+
+    # 3. 确定插入操作的目标表和 ID 字段
+    if to_type == 'dir_entity':
+        insert_table = 'dir_file'
+        insert_col = 'dir_id'
+    else: # 'dir_entity_more'
+        insert_table = 'dir_more_file'
+        insert_col = 'dir_more_id'
+
+    # 4. 执行插入操作 (绑定文件到新目录)
+    insert_query = f"""
+    INSERT INTO {insert_table} ({insert_col}, file_id)
+    VALUES (%s, %s);
+    """
+
     try:
         with db.connection.cursor() as cursor:
-            cursor.execute(query, (int(new_dire_id),int(file_id),int(xiaoqi_id),int(userID)))
-            result = cursor.fetchall()
-            db.connection.commit()
+            # 执行删除
+            cursor.execute(delete_query, (file_id, from_id))
+
+            # 执行插入 (使用新的目标ID和文件ID)
+            cursor.execute(insert_query, (to_id, file_id))
+
+        # db.connection.commit() # MySQLDatabase 已经设置为 autocommit=True，理论上不需要
+        return "Success"
+
     except pymysql.MySQLError as e:
-        return "修改失败"+str(e)
-        raise
-    return "Success"
+        # print(f"文件移动失败：{e}")
+        return "文件移动失败：" + str(e)
+    except Exception as e:
+        # print(f"文件移动失败：{e}")
+        return "文件移动失败：" + str(e)
 def main(request):
     userID = int(request.GET["userID"])
-    content=request.GET["content"]
-    old_dire_name = request.GET["old_dire_name"]
-    new_dire_name = request.GET["new_dire_name"]
-    fileid=int(request.GET["fileid"])
+    file_id = int(request.GET["file_id"]) # 文件 ID
 
+    from_id = int(request.GET["from_id"])     # 源目录 ID
+    from_type = request.GET["from_type"]      # 'dir_entity' 或 'dir_entity_more'
 
-
-    print(userID)
-    print(old_dire_name)
-    print(new_dire_name)
-    print(content)
+    to_id = int(request.GET["to_id"])         # 目标目录 ID
+    to_type = request.GET["to_type"]          # 'dir_entity' 或 'dir_entity_more'
     db = MySQLDatabase(
         host="114.213.234.179",
         user="koroot",  # 替换为您的用户名
@@ -335,17 +378,28 @@ def main(request):
         database="db_hp"  # 替换为您的数据库名
     )
     db.connect()
-    # result=search_content_from_mysql(content,userID,db)
-    current_date = datetime.datetime.now()
-    year = current_date.year
-    month = current_date.month
-    day = current_date.day
-    formatted_date = f"{year}-{month}-{day}"
-    temp_xiaoqi_id=find_xiaoqi_id(db,content)
-    old_dire_id=find_dire(userID,old_dire_name,temp_xiaoqi_id,db)
-    new_dire_id=find_dire(userID,new_dire_name,temp_xiaoqi_id,db)
-    print(old_dire_id)
-    print(new_dire_id)
-    # if new_dire_id==None:
-    #     return "修改失败，目标目录为空！！！"
-    return change_file_dire(db,fileid,old_dire_id,new_dire_id,temp_xiaoqi_id,userID,new_dire_name,old_dire_name)
+    try:
+        # 获取 xiaoqi_id
+        # 因为文件ID已经包含了 xiaoqi_id 的信息，这里从 file_id 对应的 xiaoqi_id 处获取
+        query_xiaoqi = """
+        SELECT xn.xiaoqi_id
+        FROM xiaoqi_new xn
+        JOIN xiaoqi_to_file xtf ON xn.xiaoqi_id = xtf.xiaoqi_id
+        WHERE xtf.file_id = %s LIMIT 1;
+        """
+        with db.connection.cursor() as cursor:
+            cursor.execute(query_xiaoqi, (file_id,))
+            xiaoqi_id_result = cursor.fetchone()
+            if not xiaoqi_id_result:
+                return "文件找不到对应实体"
+            xiaoqi_id = xiaoqi_id_result[0]
+
+
+        result = change_file_dire(db, file_id, from_id, from_type, to_id, to_type, xiaoqi_id, userID)
+        return result
+    except Exception as e:
+        print(f"拖拽操作失败：{e}")
+        return "拖拽操作失败：" + str(e)
+    finally:
+        if 'db' in locals() and db.connection:
+            db.connection.close()

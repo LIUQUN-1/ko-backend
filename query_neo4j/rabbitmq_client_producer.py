@@ -126,7 +126,8 @@ class RabbitMQClientProducer:
             'start_time': datetime.now().isoformat(),
             'status': 'processing',
             'entity_id': entity_id,
-            'user_id': user_id
+            'user_id': user_id,
+            'operation': 'insert',
         }
 
         self.redis_client.hset(f"{self.task_status_prefix}{task_id}", mapping=task_status)
@@ -226,6 +227,99 @@ class RabbitMQClientProducer:
 
         except Exception as e:
             logger.error(f"❌ 发送任务到RabbitMQ失败 - task_id: {task_id}, error: {str(e)}")
+            # 更新任务状态为失败
+            self.redis_client.hset(f"{self.task_status_prefix}{task_id}", "status", "failed")
+            return False
+    def send_first_classification_tasks_and_wait(self,
+                                                 final_output: List[Dict],
+                                                 file_dict_rev: Optional[Dict] = None,
+                                                 entity_id: Optional[str] = None,
+                                                 user_id: Optional[str] = None,
+                                                 timeout: int = 300) -> bool:
+        """
+        仅发送一重分类任务到RabbitMQ并等待完成
+
+        参数:
+        - final_output: 需要分类的数据列表
+        - file_dict_rev: 文件字典反向映射 {文件路径: 文件ID}
+        - entity_id: 实体ID
+        - user_id: 用户ID
+        - timeout: 超时时间（秒）
+
+        返回:
+        - bool: 是否所有任务都成功完成
+        """
+        if not final_output:
+            logger.warning("⚠️ final_output为空，无需发送一重分类任务")
+            return True
+
+        task_id = str(uuid.uuid4())
+        # 主要修改点：现在每个payload只产生一个任务，所以总任务数就是列表长度
+        total_tasks = len(final_output)
+
+        logger.info(f"🚀 开始发送一重分类任务 - task_id: {task_id}, total_tasks: {total_tasks}")
+
+        # 初始化任务状态
+        task_status = {
+            'task_id': task_id,
+            'total_tasks': total_tasks,
+            'completed_tasks': 0,
+            'failed_tasks': 0,
+            'start_time': datetime.now().isoformat(),
+            'status': 'processing',
+            'entity_id': entity_id,
+            'user_id': user_id,
+
+        }
+        try:
+            self.redis_client.hset(f"{self.task_status_prefix}{task_id}", mapping=task_status)
+            self.redis_client.expire(f"{self.task_status_prefix}{task_id}", 3600)  # 1小时过期
+        except Exception as e:
+            print(e)
+        try:
+            # 建立RabbitMQ连接
+            connection = pika.BlockingConnection(self.parameters)
+            channel = connection.channel()
+
+            # 声明一重分类队列
+            channel.queue_declare(queue=self.first_classification_queue, durable=True)
+
+            # 循环发送所有一重分类任务
+            for i, payload in enumerate(final_output):
+                # 只创建和发送一重分类任务
+                first_task = {
+                    'task_id': task_id,
+                    'sub_task_id': f"{task_id}_first_{i}",
+                    'payload': payload,
+                    'task_type': 'first_classification',
+                    'entity_id': entity_id,
+                    'user_id': user_id,
+                    'file_dict_rev': file_dict_rev,
+                    'timestamp': datetime.now().isoformat(),
+                    'operation': 'update',
+                }
+
+                # 发送一重分类消息
+                channel.basic_publish(
+                    exchange='',
+                    routing_key=self.first_classification_queue,
+                    body=json.dumps(first_task, ensure_ascii=False),
+                    properties=pika.BasicProperties(
+                        delivery_mode=2,  # 持久化消息
+                        message_id=f"first_{task_id}_{i}",
+                        headers={'task_type': 'first_classification'}
+                    )
+                )
+                logger.debug(f"📤 已发送一重分类任务 {i+1}/{len(final_output)} - task_id: {task_id}")
+
+            connection.close()
+            logger.info(f"✅ 所有一重分类任务已发送到RabbitMQ - task_id: {task_id}")
+
+            # 等待所有任务完成
+            return self._wait_for_task_completion(task_id, total_tasks, timeout)
+
+        except Exception as e:
+            logger.error(f"❌ 发送一重分类任务到RabbitMQ失败 - task_id: {task_id}, error: {str(e)}")
             # 更新任务状态为失败
             self.redis_client.hset(f"{self.task_status_prefix}{task_id}", "status", "failed")
             return False

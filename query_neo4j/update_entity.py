@@ -225,7 +225,7 @@ def main(request):
     if (int(method)==0):
         entity_list=request.GET["entity_list"]#用户输入的标识词列表，最好搞成数组格式后再转string传过来，最次也得有个逗号分隔不同的标识词
     else:
-        entity_list="[]"
+        entity_list=["name"]
     db = MySQLDatabase(
         host="114.213.234.179",
         user="koroot",  # 替换为您的用户名
