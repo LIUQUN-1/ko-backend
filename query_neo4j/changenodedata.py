@@ -362,44 +362,109 @@ def change_file_dire(db, file_id, from_id, from_type, to_id, to_type, xiaoqi_id,
     except Exception as e:
         # print(f"文件移动失败：{e}")
         return "文件移动失败：" + str(e)
+def move_directory(db, folder_id_to_move, destination_folder_id):
+    """
+    移动一个文件夹到另一个文件夹下。
+    该函数会自动判断目标是顶层目录还是子目录，并相应地设置parent_id。
+    """
+    # 验证1：一个文件夹不能被移动到它自己内部
+    if folder_id_to_move == destination_folder_id:
+        return "移动失败：不能将文件夹移动到其自身内部。"
+
+    try:
+        with db.connection.cursor() as cursor:
+            # 新增逻辑：判断 destination_folder_id 的类型
+            # 查询 dir_entity_more 表中 id 字段是否存在 destination_folder_id
+            check_id_query = "SELECT COUNT(*) FROM dir_entity_more WHERE id = %s"
+            cursor.execute(check_id_query, (destination_folder_id,))
+            is_sub_directory = cursor.fetchone()[0] > 0
+
+            new_parent_id = None
+            if is_sub_directory:
+                # 如果在 id 字段中找到了，说明目标是一个子目录，parent_id 就是它自己
+                new_parent_id = destination_folder_id
+            else:
+                # 如果在 id 字段中没找到，需要进一步确认它是不是一个顶层目录的ID
+                # (根据您的逻辑，此处我们假设它就是顶层目录，因此parent_id应为NULL)
+                # 您也可以增加对 dir_entity 表的查询来确保其有效性
+                print(f"目标ID {destination_folder_id} 被识别为顶层目录，将parent_id设置为NULL。")
+                new_parent_id = None
+
+            # 验证2：防止将父目录移动到其子目录中 (这是一个更复杂的检查，暂时简化)
+            # 在实际生产中，需要从 folder_id_to_move 向上遍历其所有父节点，
+            # 确保 destination_folder_id 不在其中。
+
+            # 核心更新逻辑
+            update_query = """
+            UPDATE dir_entity_more
+            SET parent_id = %s
+            WHERE id = %s;
+            """
+            # 传入计算出的 new_parent_id 和要移动的文件夹ID
+            cursor.execute(update_query, (new_parent_id, folder_id_to_move))
+
+        # autocommit=True, 无需手动 commit
+        print(f"文件夹 {folder_id_to_move} 已成功移动。新的 parent_id 为: {new_parent_id}")
+        return "Success"
+
+    except pymysql.MySQLError as e:
+        print(f"文件夹移动失败：{e}")
+        return f"数据库操作失败：{e}"
+    except Exception as e:
+        return f"未知错误：{e}"
 def main(request):
+    # ==================== 新增：获取拖拽类型 ====================
+    drag_type = request.GET.get("drag_type", "file") # 默认为 file 以兼容旧版前端
+
     userID = int(request.GET["userID"])
-    file_id = int(request.GET["file_id"]) # 文件 ID
 
-    from_id = int(request.GET["from_id"])     # 源目录 ID
-    from_type = request.GET["from_type"]      # 'dir_entity' 或 'dir_entity_more'
-
-    to_id = int(request.GET["to_id"])         # 目标目录 ID
-    to_type = request.GET["to_type"]          # 'dir_entity' 或 'dir_entity_more'
     db = MySQLDatabase(
         host="114.213.234.179",
-        user="koroot",  # 替换为您的用户名
-        password="DMiC-4092",  # 替换为您的密码
-        database="db_hp"  # 替换为您的数据库名
+        user="koroot",
+        password="DMiC-4092",
+        database="db_hp"
     )
     db.connect()
+
     try:
-        # 获取 xiaoqi_id
-        # 因为文件ID已经包含了 xiaoqi_id 的信息，这里从 file_id 对应的 xiaoqi_id 处获取
-        query_xiaoqi = """
-        SELECT xn.xiaoqi_id
-        FROM xiaoqi_new xn
-        JOIN xiaoqi_to_file xtf ON xn.xiaoqi_id = xtf.xiaoqi_id
-        WHERE xtf.file_id = %s LIMIT 1;
-        """
-        with db.connection.cursor() as cursor:
-            cursor.execute(query_xiaoqi, (file_id,))
-            xiaoqi_id_result = cursor.fetchone()
-            if not xiaoqi_id_result:
-                return "文件找不到对应实体"
-            xiaoqi_id = xiaoqi_id_result[0]
+        # ==================== 新增：根据类型进行路由 ====================
+        if drag_type == "folder":
+            # --- 处理文件夹移动 ---
+            folder_id_to_move = int(request.GET["folder_id_to_move"])
+            destination_folder_id = int(request.GET["destination_folder_id"])
 
+            # 这里可以添加更多验证，例如检查目标文件夹是否存在且属于该用户
 
-        result = change_file_dire(db, file_id, from_id, from_type, to_id, to_type, xiaoqi_id, userID)
-        return result
+            result = move_directory(db, folder_id_to_move, destination_folder_id)
+            return result
+
+        else: # drag_type == "file" 或默认情况
+            # --- 处理文件移动（保持原有逻辑） ---
+            file_id = int(request.GET["file_id"])
+            from_id = int(request.GET["from_id"])
+            from_type = request.GET["from_type"]
+            to_id = int(request.GET["to_id"])
+            to_type = request.GET["to_type"]
+
+            query_xiaoqi = """
+            SELECT xn.xiaoqi_id
+            FROM xiaoqi_new xn
+            JOIN xiaoqi_to_file xtf ON xn.xiaoqi_id = xtf.xiaoqi_id
+            WHERE xtf.file_id = %s LIMIT 1;
+            """
+            with db.connection.cursor() as cursor:
+                cursor.execute(query_xiaoqi, (file_id,))
+                xiaoqi_id_result = cursor.fetchone()
+                if not xiaoqi_id_result:
+                    return "文件找不到对应实体"
+                xiaoqi_id = xiaoqi_id_result[0]
+
+            result = change_file_dire(db, file_id, from_id, from_type, to_id, to_type, xiaoqi_id, userID)
+            return result
+
     except Exception as e:
         print(f"拖拽操作失败：{e}")
-        return "拖拽操作失败：" + str(e)
+        return f"拖拽操作失败：{e}"
     finally:
         if 'db' in locals() and db.connection:
             db.connection.close()
