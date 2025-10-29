@@ -1,6 +1,4 @@
 from django.shortcuts import render
-from django.http import JsonResponse, HttpResponse
-import json
 
 # Create your views here.
 from django.http import HttpResponse
@@ -71,6 +69,8 @@ from query_neo4j import auto_recommendtion
 from query_neo4j import knowledge_subscription
 from query_neo4j import change_directory
 from query_neo4j import contents_gen_manage
+from query_neo4j import File_Management
+from query_neo4j import upload_temp
 def index(request):
     # return HttpResponse("neo4j results")
     return HttpResponse(haokeywords.main(request))
@@ -276,33 +276,17 @@ def auto_recommend(request):
     result = auto_recommendtion.auto_recommendtion(request)
     return HttpResponse(json.dumps(result, ensure_ascii=False),
                        content_type='application/json')
-
-def search_timeauth(request):
-    """
-    处理 /search_timeauth 请求
-    同时支持 GET 和 POST 方法
-    """
-    try:
-        result = search_time_auth.search_time_auth(request)
-
-        # 如果 search_time_auth 返回的是字典，则转换为 JsonResponse
-        if isinstance(result, dict):
-            return JsonResponse(result, safe=False, json_dumps_params={'ensure_ascii': False})
-        # 如果已经是 HttpResponse 或 JsonResponse，直接返回
-        return result
-
-    except Exception as e:
-        return JsonResponse(
-            {"error": str(e)},
-            status=500,
-            json_dumps_params={'ensure_ascii': False}
-        )
-
 def knowledge_subscription_view(request):
         return HttpResponse(knowledge_subscription.knowledge_subscription(request), content_type='application/json')
 def get_subscriptionInfo_view(request):
     return HttpResponse(knowledge_subscription.get_subscriptionInfo(request), content_type='application/json')
 def change_directory_view(request):
     return HttpResponse(change_directory.change_directory(request), content_type='application/json')
+
 def directory_management(request):
     return HttpResponse(contents_gen_manage.directory_management(request), content_type='application/json')
+
+def file_management(request):
+    return HttpResponse(File_Management.main(request), content_type='application/json')
+def upload_new(request):
+    return HttpResponse(upload_temp.upload_and_process(request), content_type='application/json')
